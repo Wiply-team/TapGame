@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { animate, press } from "motion";
 import { motion, AnimatePresence } from "framer-motion";
 import { text } from "stream/consumers";
@@ -40,6 +40,34 @@ export default function TapGame() {
     }
   };
 
+  const handleTap = useCallback(() => {
+    if (!started) setStarted(true);
+    if (gameOver) return;
+
+    setTapCount((prev) => prev + 1);
+
+    if (circleRef.current) {
+      animate(circleRef.current! as any, { transform: "scale(0.9)" }, { duration: 0.1 }).finished.then(() => {
+        animate(circleRef.current! as any, { transform: "scale(1)" }, { duration: 0.15 });
+      });
+
+    }
+  }, [started, gameOver]);
+
+useEffect(() => {
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.code === "Space") {
+      e.preventDefault();
+      handleTap();
+    }
+  };
+
+  window.addEventListener("keydown", handleKeyDown);
+  return () => window.removeEventListener("keydown", handleKeyDown);
+}, [handleTap]);
+
+
+
   function formatTime(ms: number) {
     const sec = Math.floor(ms / 1000);
     const centis = Math.floor((ms % 1000) / 10);
@@ -49,16 +77,6 @@ export default function TapGame() {
 
     return `${secStr}.${centisStr}`;
   }
-
-  useEffect(() => {
-    if (circleRef.current) {
-      press(circleRef.current, (el) => {
-        animate(el, { scale: 0.9 }, { type: "spring", stiffness: 800 });
-        return () =>
-          animate(el, { scale: 1 }, { type: "spring", stiffness: 500 });
-      });
-    }
-  }, []);
 
   useEffect(() => {
     if (timeLeftMs === 0) setGameOver(true);
@@ -85,12 +103,6 @@ export default function TapGame() {
   }, [gameOver, started]);
 
 
-  const handleTap = () => {
-    if (!started) setStarted(true);
-    if (!gameOver) {
-      setTapCount((prev) => prev + 1);
-    }
-  };
 
   const resetGame = () => {
     setTapCount(0);
